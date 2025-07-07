@@ -9,8 +9,13 @@ const port = 3000;
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(cors());
-const token = process.env.LOG_AUTH_TOKEN;
+// Load environment variables from .env file
+require('dotenv').config();
+
+const token = process.env.LOG_AUTH;
 const links = {};
+=
+// Middleware to check for valid token
 const Log = (stack, level, pkg, message) => {
     if (!stack || !level || !pkg || !message) {
         console.error("Invalid log fields:", { stack, level, pkg, message });
@@ -29,7 +34,7 @@ const Log = (stack, level, pkg, message) => {
         logMessage,
         {
             headers: {
-                'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJNYXBDbGFpbXMiOnsiYXVkIjoiaHR0cDovLzIwLjI0NC41Ni4xNDQvZXZhbHVhdGlvbi1zZXJ2aWNlIiwiZW1haWwiOiJzdXJ5YWRldjU4MDlAZ21haWwuY29tIiwiZXhwIjoxNzUxODgxNTc5LCJpYXQiOjE3NTE4ODA2NzksImlzcyI6IkFmZm9yZCBNZWRpY2FsIFRlY2hub2xvZ2llcyBQcml2YXRlIExpbWl0ZWQiLCJqdGkiOiI1M2QzMDFiMi02MTE2LTQ3OTAtOWQ4Ni1mOGMyMDQ1YTZlMjEiLCJsb2NhbGUiOiJlbi1JTiIsIm5hbWUiOiJyIGcgc3VyeWEgZGV2Iiwic3ViIjoiOTFjZGI2NWEtNmY4NS00ZjhhLTkwZDUtZDhjODhhMDk4ZDMyIn0sImVtYWlsIjoic3VyeWFkZXY1ODA5QGdtYWlsLmNvbSIsIm5hbWUiOiJyIGcgc3VyeWEgZGV2Iiwicm9sbE5vIjoiMjEyNzIyMDUwMjEwMiIsImFjY2Vzc0NvZGUiOiJaUnNZWHgiLCJjbGllbnRJRCI6IjkxY2RiNjVhLTZmODUtNGY4YS05MGQ1LWQ4Yzg4YTA5OGQzMiIsImNsaWVudFNlY3JldCI6IktERmhLa2hrS2p1d3BSQkoifQ.4lh6peYrjNwkshQbX3EGKaOIWIl5vUs21zcFkDdk8ck`,
+                'Authorization': `Bearer ${token}`,
             }
         }
     )
@@ -41,7 +46,7 @@ const Log = (stack, level, pkg, message) => {
 
 
 
-
+// Endpoint to create a short URL
 app.post('/shorturls', (req, res) => {
     const { url, validity, shortcode } = req.body;
 
@@ -75,7 +80,7 @@ app.post('/shorturls', (req, res) => {
     });
 });
 
-
+// Endpoint to redirect short URL to long URL
 app.get('/:shortcode', (req, res) => {
     const { shortcode } = req.params;
     const link = links[shortcode];
@@ -89,17 +94,17 @@ app.get('/:shortcode', (req, res) => {
         delete links[shortcode];
         return res.status(410).json({ error: 'Short URL has expired' });
     }
-
+    //stores the click details
     link.click.push({
         timestamp: currentTime.toISOString(),
-        referrer: 'direct_access', // This can be enhanced to capture actual referrer
+        referrer: 'direct_access',
         ip: req.ip
     });
 
     res.redirect(link.longUrl);
 });
 
-
+// Endpoint to get stats for a specific short URL
 app.get('/shorturls/:shortcode/stats', (req, res) => {
     const { shortcode } = req.params;
     const link = links[shortcode];
